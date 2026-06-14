@@ -1,10 +1,10 @@
 import 'package:flutter/foundation.dart'; // kIsWeb ব্যবহারের জন্য
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart';
 import 'dart:io' show Platform; // ওএস প্ল্যাটফর্ম চেক করার জন্য
 import '../services/database_service.dart';
 import '../services/ad_service.dart';
+import '../widgets/ad_banner.dart';
 import 'result_screen.dart';
 
 class ScanPage extends StatefulWidget {
@@ -16,26 +16,17 @@ class ScanPage extends StatefulWidget {
 
 class _ScanPageState extends State<ScanPage> {
   final MobileScannerController cameraController = MobileScannerController();
-  BannerAd? _bannerAd;
   bool _isScanning = true;
-  bool _isAdSupported = false;
 
   @override
   void initState() {
     super.initState();
-
-    // AdMob শুধুমাত্র Android এবং iOS সাপোর্ট করে।
-    // লিনাক্স ডেস্কটপে রান করলে যেন ক্র্যাশ না করে তাই এই চেকগার্ড।
-    if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
-      _isAdSupported = true;
-      _bannerAd = AdService.createBannerAd();
-    }
+    // AdService already initialized in main for supported platforms.
   }
 
   @override
   void dispose() {
     cameraController.dispose(); // মেমোরি লিক রোধ করতে ডিসপোজ
-    _bannerAd?.dispose();
     super.dispose();
   }
 
@@ -92,8 +83,8 @@ class _ScanPageState extends State<ScanPage> {
                       // লোকাল ডাটাবেসে স্ক্যান হিস্ট্রি সেভ
                       await DatabaseService.addScan(rawValue, type);
 
-                      // অ্যান্ড্রোয়েড হলে ইন্টারস্টিশিয়াল অ্যাড দেখাবে, লিনাক্স হলে সরাসরি নেভিগেট করবে
-                      if (_isAdSupported) {
+                      // অ্যান্ড্রোয়েড/আইওএস হলে ইন্টারস্টিশিয়াল অ্যাড দেখাবে, অন্য প্ল্যাটফর্মে সরাসরি নেভিগেট করবে
+                      if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
                         AdService.showInterstitialAd(() {
                           _navigateToResult(rawValue, type);
                         });
@@ -117,14 +108,8 @@ class _ScanPageState extends State<ScanPage> {
               ],
             ),
           ),
-          // ব্যানার অ্যাড সেকশন (শুধুমাত্র মোবাইল ডিভাইসের জন্য দৃশ্যমান হবে)
-          if (_isAdSupported && _bannerAd != null)
-            Container(
-              alignment: Alignment.center,
-              width: _bannerAd!.size.width.toDouble(),
-              height: _bannerAd!.size.height.toDouble(),
-              child: AdWidget(ad: _bannerAd!),
-            ),
+          // Reusable banner widget (no-ops on unsupported platforms)
+          const AdBanner(),
         ],
       ),
     );

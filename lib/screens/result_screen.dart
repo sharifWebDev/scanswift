@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
+import '../widgets/ad_banner.dart';
 
 class ResultScreen extends StatelessWidget {
   final String codeValue;
@@ -34,43 +35,52 @@ class ResultScreen extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Card(
-              elevation: 4,
-              shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(15)),
-              child: Padding(
-                padding: const EdgeInsets.all(20.0),
+            Expanded(
+              child: SingleChildScrollView(
                 child: Column(
                   children: [
-                    Chip(label: Text(codeType.toUpperCase())),
-                    const SizedBox(height: 15),
-                    SelectableText(
-                      codeValue,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                          fontSize: 18, fontWeight: FontWeight.w500),
+                    Card(
+                      elevation: 4,
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(15)),
+                      child: Padding(
+                        padding: const EdgeInsets.all(20.0),
+                        child: Column(
+                          children: [
+                            Chip(label: Text(codeType.toUpperCase())),
+                            const SizedBox(height: 15),
+                            SelectableText(
+                              codeValue,
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                  fontSize: 18, fontWeight: FontWeight.w500),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 30),
+                    if (isUrl)
+                      ElevatedButton.icon(
+                        icon: const Icon(Icons.open_in_browser),
+                        label: const Text('Open URL Link'),
+                        style: ElevatedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 15)),
+                        onPressed: () => _openLink(context),
+                      ),
+                    const SizedBox(height: 12),
+                    OutlinedButton.icon(
+                      icon: const Icon(Icons.share),
+                      label: const Text('Share Content'),
+                      style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 15)),
+                      onPressed: () => Share.share(codeValue),
                     ),
                   ],
                 ),
               ),
             ),
-            const SizedBox(height: 30),
-            if (isUrl)
-              ElevatedButton.icon(
-                icon: const Icon(Icons.open_in_browser),
-                label: const Text('Open URL Link'),
-                style: ElevatedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(vertical: 15)),
-                onPressed: () => _openLink(context),
-              ),
-            const SizedBox(height: 12),
-            OutlinedButton.icon(
-              icon: const Icon(Icons.share),
-              label: const Text('Share Content'),
-              style: OutlinedButton.styleFrom(
-                  padding: const EdgeInsets.symmetric(vertical: 15)),
-              onPressed: () => Share.share(codeValue),
-            ),
+            const AdBanner(),
           ],
         ),
       ),

@@ -8,6 +8,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 import 'package:barcode_widget/barcode_widget.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:path_provider/path_provider.dart';
+import '../widgets/ad_banner.dart';
 // PDF এবং Printing এর ঝামেলা এড়াতে লিনাক্স বিল্ডের জন্য সাময়িক কমেন্ট করা হলো
 
 class GeneratePage extends StatefulWidget {
@@ -269,6 +270,8 @@ class _GeneratePageState extends State<GeneratePage> {
                 ),
               ],
             ),
+            const SizedBox(height: 18),
+            const AdBanner(),
           ],
         ),
       ),

@@ -21,8 +21,8 @@ android {
     }
 
     defaultConfig {
-        // Your unique Application ID
-        applicationId = "sharifwebdeb.github.io"
+        // Your unique Application ID (use reverse-domain notation)
+        applicationId = "com.example.scanswift"
         
         // গ্র্যাডল-এর লেটেস্ট রিকোয়ারমেন্ট অনুযায়ী ডিরেক্ট প্রপার্টি অ্যাসাইনমেন্ট
         minSdk = flutter.minSdkVersion
