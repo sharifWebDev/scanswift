@@ -34,6 +34,16 @@ dev_dependencies:
     sdk: flutter
   hive_generator: ^2.0.1
   build_runner: ^2.4.9
+  flutter_launcher_icons: ^0.13.1 # বা লেটেস্ট ভার্সন
+
+flutter_launcher_icons:
+  android: "launcher_icon"
+  ios: true
+  image_path: "assets/images/app_logo.png"
+  min_sdk_android: 21 # আপনার প্রজেক্টের minSdk অনুযায়ী
 
 flutter:
   uses-material-design: true
+
+  assets:
+    - assets/images/app_logo.png

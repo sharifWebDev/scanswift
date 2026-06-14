@@ -6,7 +6,9 @@ import '../services/ad_service.dart';
 
 /// Reusable banner ad widget. Safely no-ops on unsupported platforms (web/desktop).
 class AdBanner extends StatefulWidget {
-  const AdBanner({super.key});
+  final Object? refreshId;
+
+  const AdBanner({super.key, this.refreshId});
 
   @override
   State<AdBanner> createState() => _AdBannerState();
@@ -22,6 +24,17 @@ class _AdBannerState extends State<AdBanner> {
     if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
       _isAdSupported = true;
       _bannerAd = AdService.createBannerAd();
+    }
+  }
+
+  @override
+  void didUpdateWidget(covariant AdBanner oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // If the parent signals a refresh by changing `refreshId`, recreate the ad.
+    if (widget.refreshId != oldWidget.refreshId && _isAdSupported) {
+      _bannerAd?.dispose();
+      _bannerAd = AdService.createBannerAd();
+      setState(() {});
     }
   }
 

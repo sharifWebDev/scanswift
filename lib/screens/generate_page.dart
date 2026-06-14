@@ -8,11 +8,16 @@ import 'package:qr_flutter/qr_flutter.dart';
 import 'package:barcode_widget/barcode_widget.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:path_provider/path_provider.dart';
+import 'history_page.dart';
+import '../services/database_service.dart';
 import '../widgets/ad_banner.dart';
 // PDF এবং Printing এর ঝামেলা এড়াতে লিনাক্স বিল্ডের জন্য সাময়িক কমেন্ট করা হলো
 
 class GeneratePage extends StatefulWidget {
-  const GeneratePage({super.key});
+  final String? initialData;
+  final String? initialType;
+
+  const GeneratePage({super.key, this.initialData, this.initialType});
 
   @override
   State<GeneratePage> createState() => _GeneratePageState();
@@ -26,6 +31,7 @@ class _GeneratePageState extends State<GeneratePage> {
   final TextEditingController _heightController =
       TextEditingController(text: "200");
   final GlobalKey _globalKey = GlobalKey();
+  int _adRefreshId = 0;
 
   String _generatedData = "0";
   String _selectedType = "QR Code";
@@ -62,8 +68,24 @@ class _GeneratePageState extends State<GeneratePage> {
     final file = await File('${tempDir.path}/scanswift_code.png').create();
     await file.writeAsBytes(pngBytes);
 
-    await Share.shareXFiles([XFile(file.path)],
-        text: 'Generated via ScanSwift');
+    try {
+      await Share.shareXFiles([XFile(file.path)],
+          text: 'Generated via ScanSwift');
+      // refresh banner after successful share
+      setState(() => _adRefreshId++);
+    } on PlatformException {
+      // Some platforms (or older Android implementations) may not return
+      // a result callback for share sheets. Fall back to a non-result
+      // variant so the user can still share the file without crashing.
+      try {
+        Share.shareXFiles([XFile(file.path)], text: 'Generated via ScanSwift');
+        setState(() => _adRefreshId++);
+      } catch (_) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Unable to open share sheet')),
+        );
+      }
+    }
   }
 
   // লিনাক্স বিল্ড ফ্রেন্ডলি প্রিন্ট মেথড
@@ -74,6 +96,7 @@ class _GeneratePageState extends State<GeneratePage> {
         backgroundColor: Colors.blue,
       ),
     );
+    setState(() => _adRefreshId++);
   }
 
   Future<void> _copyImageToClipboard() async {
@@ -83,10 +106,46 @@ class _GeneratePageState extends State<GeneratePage> {
         backgroundColor: Colors.green,
       ),
     );
+    setState(() => _adRefreshId++);
+  }
+
+  Future<void> _saveGeneratedData() async {
+    if (_generatedData.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please enter text to generate first')),
+      );
+      return;
+    }
+
+    final type = _selectedType == 'QR Code' ? 'QR Code' : 'Barcode';
+    await DatabaseService.addScan(_generatedData, type);
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: const Text('Saved to history'),
+        action: SnackBarAction(
+          label: 'View',
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const HistoryPage()),
+            );
+          },
+        ),
+      ),
+    );
+    setState(() => _adRefreshId++);
   }
 
   @override
   Widget build(BuildContext context) {
+    // Initialize controllers with initial data if provided
+    final initialData = widget.initialData ?? '';
+    if (_textController.text.isEmpty && initialData.isNotEmpty) {
+      _textController.text = initialData;
+      _generatedData = initialData;
+    }
+
     double customWidth = double.tryParse(_widthController.text) ?? 200.0;
     double customHeight = double.tryParse(_heightController.text) ?? 200.0;
 
@@ -257,6 +316,19 @@ class _GeneratePageState extends State<GeneratePage> {
                 ),
                 const SizedBox(width: 8),
                 Expanded(
+                  child: ElevatedButton.icon(
+                    icon: const Icon(Icons.save),
+                    label: const Text('Save'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.green,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
+                    onPressed: _saveGeneratedData,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
                   child: OutlinedButton.icon(
                     icon: const Icon(Icons.copy),
                     label: const Text('Copy'),
@@ -271,7 +343,7 @@ class _GeneratePageState extends State<GeneratePage> {
               ],
             ),
             const SizedBox(height: 18),
-            const AdBanner(),
+            AdBanner(refreshId: _adRefreshId),
           ],
         ),
       ),

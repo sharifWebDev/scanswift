@@ -64,7 +64,8 @@ class HistoryPage extends StatelessWidget {
                           MaterialPageRoute(
                             builder: (context) => ResultScreen(
                                 codeValue: scan.codeValue,
-                                codeType: scan.codeType),
+                                codeType: scan.codeType,
+                                fromHistory: true),
                           ),
                         );
                       },
@@ -74,7 +75,7 @@ class HistoryPage extends StatelessWidget {
               },
             ),
           ),
-          const AdBanner(),
+          AdBanner(),
         ],
       ),
     );
