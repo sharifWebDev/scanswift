@@ -13,8 +13,6 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _currentIndex = 0;
-  // Changing this value forces the AdBanner to refresh its ad.
-  int _adRefreshId = 0;
 
   final List<Widget> _pages = [
     const ScanPage(),
@@ -33,7 +31,6 @@ class _HomeScreenState extends State<HomeScreen> {
               children: _pages,
             ),
           ),
-          AdBanner(refreshId: _adRefreshId),
         ],
       ),
       bottomNavigationBar: NavigationBar(
@@ -41,8 +38,6 @@ class _HomeScreenState extends State<HomeScreen> {
         onDestinationSelected: (index) {
           setState(() {
             _currentIndex = index;
-            // Refresh banner when user switches tabs (keeps ad activity reasonable)
-            _adRefreshId++;
           });
         },
         destinations: const [
