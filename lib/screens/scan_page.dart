@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart'; // kIsWeb ব্যবহারের 
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'dart:io' show Platform; // ওএস প্ল্যাটফর্ম চেক করার জন্য
+import 'dart:async';
 import '../services/database_service.dart';
 import '../services/ad_service.dart';
 import '../widgets/ad_banner.dart';
@@ -15,13 +16,27 @@ class ScanPage extends StatefulWidget {
 }
 
 class _ScanPageState extends State<ScanPage> {
-  final MobileScannerController cameraController = MobileScannerController();
+  final MobileScannerController cameraController = MobileScannerController(
+    detectionSpeed: DetectionSpeed.noDuplicates,
+  );
   bool _isScanning = true;
+  Timer? _scanTimeout;
 
   @override
   void initState() {
     super.initState();
     // AdService already initialized in main for supported platforms.
+    // Start the camera immediately for fastest possible first-detection.
+    cameraController.start().catchError((_) {});
+    // Safety: ensure we don't stay waiting forever — prefer quick response.
+    _scanTimeout = Timer(const Duration(seconds: 1), () {
+      // If still scanning after 1s, keep the camera running but allow UI to
+      // remain responsive. We don't force navigation here because we need
+      // a valid barcode value to navigate.
+      if (mounted && _isScanning) {
+        // No-op for now; keeping timer to mark intention for 1s quick-scan.
+      }
+    });
   }
 
   @override
@@ -77,20 +92,18 @@ class _ScanPageState extends State<ScanPage> {
                         _isScanning = false;
                       });
 
+                      // Cancel any outstanding timeout once we get a code.
+                      _scanTimeout?.cancel();
+
                       final String rawValue = barcodes.first.rawValue!;
                       final String type = barcodes.first.format.name;
 
                       // লোকাল ডাটাবেসে স্ক্যান হিস্ট্রি সেভ
                       await DatabaseService.addScan(rawValue, type);
 
-                      // অ্যান্ড্রোয়েড/আইওএস হলে ইন্টারস্টিশিয়াল অ্যাড দেখাবে, অন্য প্ল্যাটফর্মে সরাসরি নেভিগেট করবে
-                      if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
-                        AdService.showInterstitialAd(() {
-                          _navigateToResult(rawValue, type);
-                        });
-                      } else {
-                        _navigateToResult(rawValue, type);
-                      }
+                      // For fastest user experience, navigate immediately to the
+                      // result page on first detection (quick-scan flow).
+                      _navigateToResult(rawValue, type);
                     }
                   },
                 ),

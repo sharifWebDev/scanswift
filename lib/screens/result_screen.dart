@@ -1,4 +1,10 @@
+import 'dart:io';
+import 'dart:ui' as ui;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
+import 'package:flutter/services.dart';
+import 'package:path_provider/path_provider.dart'; // ফাইল সিস্টেমের জন্য
 import 'package:share_plus/share_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:qr_flutter/qr_flutter.dart';
@@ -24,10 +30,64 @@ class ResultScreen extends StatefulWidget {
 
 class _ResultScreenState extends State<ResultScreen> {
   int _adRefreshId = 0;
+  // QR/Barcode জোনের ইমেজ ক্যাপচার করার জন্য গ্লোবাল কী
+  final GlobalKey _qrKey = GlobalKey();
 
   Future<void> _shareContent() async {
     await Share.share(widget.codeValue);
     setState(() => _adRefreshId++);
+  }
+
+  Future<void> _copyToClipboard() async {
+    await Clipboard.setData(ClipboardData(text: widget.codeValue));
+    _showSnackBar('Copied text to clipboard!', const Color(0xFF059669),
+        Icons.check_circle_rounded);
+  }
+
+  // নতুন ফাংশন: QR Code Image কপি/সেভ করার জন্য
+  Future<void> _copyQrImage() async {
+    try {
+      // ১. RepaintBoundary থেকে পিক্সেল ডাটা নেওয়া
+      RenderRepaintBoundary boundary =
+          _qrKey.currentContext!.findRenderObject() as RenderRepaintBoundary;
+      ui.Image image = await boundary.toImage(pixelRatio: 3.0);
+      ByteData? byteData =
+          await image.toByteData(format: ui.ImageByteFormat.png);
+      Uint8List pngBytes = byteData!.buffer.asUint8List();
+
+      // ২. টেম্পোরারি ফোল্ডারে ইমেজটি রাইট করা
+      final tempDir = await getTemporaryDirectory();
+      final file = await File('${tempDir.path}/qr_code.png').create();
+      await file.writeAsBytes(pngBytes);
+
+      // ৩. ইমেজটি শেয়ার বা গ্যালারিতে সেভ করার উইন্ডো ওপেন করা (মোবাইল ও ডেক্সটপ ফ্রেন্ডলি)
+      final XFile xFile = XFile(file.path);
+      await Share.shareXFiles([xFile], text: 'My QR/Barcode Image');
+
+      setState(() => _adRefreshId++);
+    } catch (e) {
+      _showSnackBar('Failed to copy image.', Colors.redAccent,
+          Icons.error_outline_rounded);
+    }
+  }
+
+  void _showSnackBar(String message, Color bgColor, IconData icon) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(icon, color: Colors.white),
+            const SizedBox(width: 8),
+            Text(message, style: const TextStyle(fontWeight: FontWeight.w500)),
+          ],
+        ),
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        backgroundColor: bgColor,
+        duration: const Duration(seconds: 2),
+      ),
+    );
   }
 
   Future<void> _openLink(BuildContext context) async {
@@ -35,141 +95,272 @@ class _ResultScreenState extends State<ResultScreen> {
     if (await canLaunchUrl(url)) {
       await launchUrl(url, mode: LaunchMode.externalApplication);
     } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-            content: Text('Could not open in browser (Plain Text).')),
-      );
+      _showSnackBar('Plain Text detected. Opening in browser failed.',
+          Colors.redAccent, Icons.error_outline_rounded);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    bool isUrl = widget.codeValue.startsWith('http://') ||
+    final bool isUrl = widget.codeValue.startsWith('http://') ||
         widget.codeValue.startsWith('https://');
+    final isQr = widget.codeType.toLowerCase().contains('qr');
+    final theme = Theme.of(context);
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Result')),
-      body: Padding(
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Expanded(
-              child: SingleChildScrollView(
-                child: Column(
-                  children: [
-                    Card(
-                      elevation: 6,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(16)),
-                      child: Padding(
-                        padding: const EdgeInsets.all(18.0),
-                        child: Column(
-                          children: [
-                            // Display barcode/QR image
-                            SizedBox(
-                              width: 260,
-                              height: 260,
-                              child: Center(
-                                child:
-                                    widget.codeType.toLowerCase().contains('qr')
-                                        ? QrImageView(
-                                            data: widget.codeValue,
-                                            version: QrVersions.auto)
-                                        : BarcodeWidget(
-                                            barcode: Barcode.code128(),
-                                            data: widget.codeValue,
-                                            drawText: false,
-                                          ),
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            SelectableText(
-                              widget.codeValue,
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(
-                                  fontSize: 16, fontWeight: FontWeight.w600),
-                            ),
-                            const SizedBox(height: 8),
-                            Chip(label: Text(widget.codeType.toUpperCase())),
+      backgroundColor: theme.colorScheme.surfaceVariant.withOpacity(0.3),
+      appBar: AppBar(
+        title: const Text('Scan Result',
+            style: TextStyle(fontWeight: FontWeight.bold)),
+        centerTitle: true,
+        elevation: 0,
+        backgroundColor: Colors.transparent,
+      ),
+      body: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  child: Column(
+                    children: [
+                      const SizedBox(height: 10),
+                      // Main Premium Card
+                      Container(
+                        decoration: BoxDecoration(
+                          color: theme.colorScheme.surface,
+                          borderRadius: BorderRadius.circular(28),
+                          boxShadow: [
+                            BoxShadow(
+                              color: theme.colorScheme.shadow.withOpacity(0.06),
+                              blurRadius: 24,
+                              offset: const Offset(0, 8),
+                            )
                           ],
                         ),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    Card(
-                      elevation: 4,
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(15)),
-                      child: Padding(
-                        padding: const EdgeInsets.all(20.0),
-                        child: Column(
-                          children: [
-                            Chip(label: Text(widget.codeType.toUpperCase())),
-                            const SizedBox(height: 15),
-                            SelectableText(
-                              widget.codeValue,
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(
-                                  fontSize: 18, fontWeight: FontWeight.w500),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 30),
-                    if (isUrl)
-                      ElevatedButton.icon(
-                        icon: const Icon(Icons.open_in_browser),
-                        label: const Text('Open URL Link'),
-                        style: ElevatedButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(vertical: 15)),
-                        onPressed: () => _openLink(context),
-                      ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton.icon(
-                            icon: const Icon(Icons.share),
-                            label: const Text('Share Content'),
-                            style: OutlinedButton.styleFrom(
-                                padding:
-                                    const EdgeInsets.symmetric(vertical: 15)),
-                            onPressed: () => _shareContent(),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        if (widget.fromHistory)
-                          Expanded(
-                            child: ElevatedButton.icon(
-                              icon: const Icon(Icons.edit),
-                              label: const Text('Edit'),
-                              style: ElevatedButton.styleFrom(
-                                  padding:
-                                      const EdgeInsets.symmetric(vertical: 15)),
-                              onPressed: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => GeneratePage(
-                                        initialData: widget.codeValue,
-                                        initialType: widget.codeType),
+                        child: Padding(
+                          padding: const EdgeInsets.all(24.0),
+                          child: Column(
+                            children: [
+                              // Code Type Badge
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 16, vertical: 6),
+                                decoration: BoxDecoration(
+                                  color: theme.colorScheme.primaryContainer,
+                                  borderRadius: BorderRadius.circular(30),
+                                ),
+                                child: Text(
+                                  widget.codeType.toUpperCase(),
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: theme.colorScheme.onPrimaryContainer,
+                                    letterSpacing: 1.2,
                                   ),
-                                );
-                              },
+                                ),
+                              ),
+                              const SizedBox(height: 24),
+
+                              // RepaintBoundary দিয়ে QR কোডটিকে র‍্যাপ করা হয়েছে যাতে ইমেজ স্ক্রিনশট নেওয়া যায়
+                              RepaintBoundary(
+                                key: _qrKey,
+                                child: Container(
+                                  padding: const EdgeInsets.all(16),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(20),
+                                    border: Border.all(
+                                        color: Colors.grey.shade100, width: 2),
+                                  ),
+                                  child: SizedBox(
+                                    width: 200,
+                                    height: 200,
+                                    child: Center(
+                                      child: isQr
+                                          ? QrImageView(
+                                              data: widget.codeValue,
+                                              version: QrVersions.auto,
+                                              eyeStyle: const QrEyeStyle(
+                                                eyeShape: QrEyeShape.square,
+                                                color: Color(0xFF1A1A1A),
+                                              ),
+                                            )
+                                          : BarcodeWidget(
+                                              barcode: Barcode.code128(),
+                                              data: widget.codeValue,
+                                              drawText: false,
+                                              color: const Color(0xFF1A1A1A),
+                                            ),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(height: 24),
+                              // Selectable Value Box
+                              Container(
+                                width: double.infinity,
+                                padding: const EdgeInsets.all(16),
+                                decoration: BoxDecoration(
+                                  color: theme.colorScheme.surfaceVariant
+                                      .withOpacity(0.4),
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                child: SelectableText(
+                                  widget.codeValue,
+                                  textAlign: TextAlign.center,
+                                  style: const TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w500,
+                                    height: 1.4,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+
+                      // ১ নম্বর মডার্ন রো: Copy Text & Copy/Share Image
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildActionButton(
+                              context: context,
+                              icon: Icons.copy_rounded,
+                              label: 'Copy Text',
+                              onTap: _copyToClipboard,
+                              isPrimary: false,
                             ),
                           ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _buildActionButton(
+                              context: context,
+                              icon: Icons.image_rounded,
+                              label: 'Copy Image',
+                              onTap: _copyQrImage, // ইমেজ অ্যাকশন বাটন
+                              isPrimary: false,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+
+                      // ২ নম্বর মডার্ন রো: Share Content
+                      _buildActionButton(
+                        context: context,
+                        icon: Icons.share_rounded,
+                        label: 'Share Content',
+                        onTap: _shareContent,
+                        isPrimary: false,
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Primary Actions (Open URL / Edit)
+                      if (isUrl) ...[
+                        _buildActionButton(
+                          context: context,
+                          icon: Icons.language_rounded,
+                          label: 'Open URL Link',
+                          onTap: () => _openLink(context),
+                          isPrimary: true,
+                        ),
+                        const SizedBox(height: 16),
                       ],
-                    ),
-                  ],
+
+                      if (widget.fromHistory)
+                        _buildActionButton(
+                          context: context,
+                          icon: Icons.edit_note_rounded,
+                          label: 'Edit Code',
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => GeneratePage(
+                                    initialData: widget.codeValue,
+                                    initialType: widget.codeType),
+                              ),
+                            );
+                          },
+                          isPrimary: !isUrl,
+                        ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-            AdBanner(refreshId: _adRefreshId),
-          ],
+              const SizedBox(height: 12),
+              // Ad Placement
+              Card(
+                elevation: 0,
+                clipBehavior: Clip.antiAlias,
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(16)),
+                child: AdBanner(refreshId: _adRefreshId),
+              ),
+            ],
+          ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildActionButton({
+    required BuildContext context,
+    required IconData icon,
+    required String label,
+    required VoidCallback onTap,
+    required bool isPrimary,
+  }) {
+    final theme = Theme.of(context);
+    return Container(
+      height: 52,
+      width: double.infinity,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        gradient: isPrimary
+            ? LinearGradient(
+                colors: [
+                  theme.colorScheme.primary,
+                  theme.colorScheme.primary.withOpacity(0.8)
+                ],
+              )
+            : null,
+      ),
+      child: ElevatedButton.icon(
+        icon: Icon(icon,
+            color: isPrimary ? Colors.white : theme.colorScheme.primary,
+            size: 20),
+        label: Text(
+          label,
+          style: TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.bold,
+            color: isPrimary ? Colors.white : theme.colorScheme.primary,
+          ),
+        ),
+        style: ElevatedButton.styleFrom(
+          backgroundColor:
+              isPrimary ? Colors.transparent : theme.colorScheme.surface,
+          foregroundColor: isPrimary ? Colors.white : theme.colorScheme.primary,
+          elevation: isPrimary ? 2 : 0,
+          shadowColor: isPrimary
+              ? theme.colorScheme.primary.withOpacity(0.3)
+              : Colors.transparent,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+            side: isPrimary
+                ? BorderSide.none
+                : BorderSide(
+                    color: theme.colorScheme.outlineVariant.withOpacity(0.6)),
+          ),
+        ),
+        onPressed: onTap,
       ),
     );
   }
