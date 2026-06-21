@@ -16,6 +16,9 @@ void main() async {
   // লিনাক্স ডেস্কটপ বা ওয়েবে যেন MissingPluginException না আসে, তাই এই চেক।
   if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
     await AdService.init();
+    // Preload full-screen ads for a smoother user experience
+    AdService.preloadInterstitial();
+    AdService.preloadRewardedAd();
   }
 
   runApp(const ScanSwiftApp());

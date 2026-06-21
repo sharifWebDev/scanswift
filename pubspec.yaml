@@ -9,6 +9,9 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+
+  google_fonts: ^6.1.0
+  shared_preferences: ^2.2.2
   
   # Core Engines
   mobile_scanner: ^5.0.0
@@ -28,6 +31,9 @@ dependencies:
 
   pdf: ^3.11.1
   printing: ^5.13.2
+
+  audioplayers: ^5.2.1
+  vibration: ^2.0.1
 
 dev_dependencies:
   flutter_test:

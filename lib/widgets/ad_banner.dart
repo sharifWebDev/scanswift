@@ -17,13 +17,28 @@ class AdBanner extends StatefulWidget {
 class _AdBannerState extends State<AdBanner> {
   BannerAd? _bannerAd;
   bool _isAdSupported = false;
+  bool _isLoaded = false;
 
   @override
   void initState() {
     super.initState();
     if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
       _isAdSupported = true;
-      _bannerAd = AdService.createBannerAd();
+      _isLoaded = false;
+      _bannerAd = AdService.createBannerAd(
+        onAdLoaded: () {
+          if (!mounted) return;
+          setState(() {
+            _isLoaded = true;
+          });
+        },
+        onAdFailedToLoad: () {
+          if (!mounted) return;
+          setState(() {
+            _isLoaded = false;
+          });
+        },
+      );
     }
   }
 
@@ -33,7 +48,17 @@ class _AdBannerState extends State<AdBanner> {
     // If the parent signals a refresh by changing `refreshId`, recreate the ad.
     if (widget.refreshId != oldWidget.refreshId && _isAdSupported) {
       _bannerAd?.dispose();
-      _bannerAd = AdService.createBannerAd();
+      _isLoaded = false;
+      _bannerAd = AdService.createBannerAd(
+        onAdLoaded: () {
+          if (!mounted) return;
+          setState(() => _isLoaded = true);
+        },
+        onAdFailedToLoad: () {
+          if (!mounted) return;
+          setState(() => _isLoaded = false);
+        },
+      );
       setState(() {});
     }
   }
@@ -46,7 +71,8 @@ class _AdBannerState extends State<AdBanner> {
 
   @override
   Widget build(BuildContext context) {
-    if (!_isAdSupported || _bannerAd == null) return const SizedBox.shrink();
+    if (!_isAdSupported || _bannerAd == null || !_isLoaded)
+      return const SizedBox.shrink();
 
     return Container(
       alignment: Alignment.center,
