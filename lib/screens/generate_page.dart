@@ -260,40 +260,7 @@ class _GeneratePageState extends State<GeneratePage>
             ),
           ),
         ],
-      ),
-      centerTitle: false,
-      actions: [
-        Container(
-          margin: const EdgeInsets.only(right: 12),
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Colors.deepPurple.shade50, Colors.deepPurple.shade100],
-            ),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.deepPurple.shade200),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.bolt_rounded,
-                  size: 12, color: Colors.deepPurple.shade700),
-              const SizedBox(width: 4),
-              Flexible(
-                child: Text(
-                  'Enterprise',
-                  style: GoogleFonts.inter(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.deepPurple.shade700,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
+      ), 
     );
   }
 

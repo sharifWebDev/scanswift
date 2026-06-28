@@ -79,38 +79,9 @@ class _PrivacyPolicyPageState extends State<PrivacyPolicyPage> {
         elevation: 0,
         backgroundColor: Colors.transparent,
         foregroundColor: Colors.deepPurple.shade800,
-        leading: IconButton(
-          icon: Container(
-            padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(12),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.grey.withOpacity(0.1),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: const Icon(Icons.arrow_back_rounded, size: 20),
-          ),
-          onPressed: () => Navigator.pop(context),
-        ),
+        
         title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Colors.green.shade400, Colors.green.shade700],
-                ),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: const Icon(Icons.privacy_tip_rounded,
-                  color: Colors.white, size: 20),
-            ),
-            const SizedBox(width: 12),
+          children: [  
             Text(
               'Privacy Policy',
               style: GoogleFonts.inter(
@@ -121,38 +92,10 @@ class _PrivacyPolicyPageState extends State<PrivacyPolicyPage> {
             ),
           ],
         ),
-        centerTitle: false,
-        actions: [
-          Container(
-            margin: const EdgeInsets.only(right: 16),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Colors.green.shade50, Colors.green.shade100],
-              ),
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: Colors.green.shade200),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.shield_rounded,
-                    size: 16, color: Colors.green.shade700),
-                const SizedBox(width: 4),
-                Text(
-                  'GDPR Compliant',
-                  style: GoogleFonts.inter(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                    color: Colors.green.shade700,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
+        
       ),
       body: Padding(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(15),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

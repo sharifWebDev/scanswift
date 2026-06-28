@@ -99,7 +99,7 @@ class _HomeScreenState extends State<HomeScreen>
           children: [
             // Sidebar Header with Close Button
             Container(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(15),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
