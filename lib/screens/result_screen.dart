@@ -178,7 +178,6 @@ class _ResultScreenState extends State<ResultScreen> {
                                   ),
                                   child: SizedBox(
                                     width: 200,
-                                    height: 200,
                                     child: Center(
                                       child: isQr
                                           ? QrImageView(
@@ -192,6 +191,8 @@ class _ResultScreenState extends State<ResultScreen> {
                                           : BarcodeWidget(
                                               barcode: Barcode.code128(),
                                               data: widget.codeValue,
+                                              width: 200,
+                                              height: 80, // অথবা 70-100 তোমার পছন্দমতো
                                               drawText: false,
                                               color: const Color(0xFF1A1A1A),
                                             ),

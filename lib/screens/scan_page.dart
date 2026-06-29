@@ -371,10 +371,10 @@ class _ScanPageState extends State<ScanPage>
                         color: Colors.white.withOpacity(0.8),
                         width: 3,
                       ),
-                      borderRadius: BorderRadius.circular(24),
+                      borderRadius: BorderRadius.circular(3),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.deepPurple.withOpacity(0.3),
+                          color: const Color.fromARGB(255, 185, 185, 185).withOpacity(0.3),
                           blurRadius: 30,
                           spreadRadius: 10,
                         ),
@@ -398,14 +398,14 @@ class _ScanPageState extends State<ScanPage>
                                 left: 20,
                                 right: 20,
                                 child: Container(
-                                  height: 2,
+                                  height: 1,
                                   decoration: BoxDecoration(
                                     gradient: LinearGradient(
                                       colors: [
                                         Colors.transparent,
-                                        Colors.deepPurple.shade300,
-                                        Colors.deepPurple.shade600,
-                                        Colors.deepPurple.shade300,
+                                        const Color.fromARGB(255, 0, 0, 0),
+                                        const Color.fromARGB(255, 0, 0, 0),
+                                        const Color.fromARGB(255, 0, 0, 0),
                                         Colors.transparent,
                                       ],
                                     ),
@@ -415,10 +415,10 @@ class _ScanPageState extends State<ScanPage>
                                     decoration: BoxDecoration(
                                       boxShadow: [
                                         BoxShadow(
-                                          color: Colors.deepPurple
-                                              .withOpacity(0.6),
-                                          blurRadius: 10,
-                                          spreadRadius: 2,
+                                          color: const Color.fromARGB(255, 107, 107, 107)
+                                              .withOpacity(0.3),
+                                          blurRadius: 5,
+                                          spreadRadius: 1,
                                         ),
                                       ],
                                     ),
@@ -478,7 +478,7 @@ class _ScanPageState extends State<ScanPage>
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.deepPurple.shade400,
+            color: const Color.fromARGB(255, 182, 182, 182),
             blurRadius: 30,
             spreadRadius: 10,
           ),

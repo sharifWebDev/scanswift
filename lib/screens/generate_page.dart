@@ -708,6 +708,8 @@ class _GeneratePageState extends State<GeneratePage>
                               ),
                               dataModuleStyle: const QrDataModuleStyle(
                                 color: Color(0xFF1A1A1A),
+                                dataModuleShape: QrDataModuleShape.square, 
+                                
                               ),
                             )
                           : BarcodeWidget(
