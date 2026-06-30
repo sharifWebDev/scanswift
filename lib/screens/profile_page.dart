@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/database_service.dart';
 import '../models/scan_model.dart';
+import '../widgets/ad_banner.dart';
 
 class ProfilePage extends StatefulWidget {
   const ProfilePage({super.key});
@@ -168,6 +169,10 @@ class _ProfilePageState extends State<ProfilePage>
                     // ── Recent Activity ─────────────────────────────────────
                     _buildRecentActivityCard(recent),
                     const SizedBox(height: 24),
+
+                    // ── Banner Ad ───────────────────────────────────────────
+                    const AdBanner(),
+                    const SizedBox(height: 8),
                   ],
                 ),
               ),

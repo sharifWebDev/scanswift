@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:hive_flutter/hive_flutter.dart';
@@ -6,6 +7,8 @@ import 'package:path_provider/path_provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/database_service.dart';
 import '../models/scan_model.dart';
+import '../services/ad_service.dart';
+import '../widgets/ad_banner.dart';
 
 class SettingsPage extends StatefulWidget {
   const SettingsPage({super.key});
@@ -136,6 +139,10 @@ class _SettingsPageState extends State<SettingsPage>
     await box.clear();
     await _computeCacheSize();
     _snack('Scan history cleared', Colors.green.shade700);
+    // Show interstitial after clearing all history (natural pause per AdMob policy)
+    if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
+      AdService.showInterstitialAd();
+    }
   }
 
   // ── Reset all settings to defaults ───────────────────────────────────────
@@ -445,7 +452,11 @@ class _SettingsPageState extends State<SettingsPage>
                       ),
                     ),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 20),
+
+                  // ── Banner Ad ─────────────────────────────────────────────────
+                  const AdBanner(),
+                  const SizedBox(height: 12),
                 ],
               ),
             );

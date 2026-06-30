@@ -16,6 +16,7 @@ dependencies:
   # Core Engines
   mobile_scanner: ^5.0.0
   qr_flutter: ^4.1.0
+  barcode_scan2: ^4.7.2
   
   # Storage & Utilities
   hive_flutter: ^1.1.0

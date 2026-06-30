@@ -1,11 +1,15 @@
+import 'dart:io' show Platform;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 import 'package:intl/intl.dart';
+import 'package:barcode_widget/barcode_widget.dart'; // For barcode icons
 import '../services/database_service.dart';
 import '../models/scan_model.dart';
 import 'result_screen.dart';
 import '../widgets/ad_banner.dart';
+import '../services/ad_service.dart';
 
 class HistoryPage extends StatefulWidget {
   const HistoryPage({super.key});
@@ -234,6 +238,10 @@ class _HistoryPageState extends State<HistoryPage>
                     await box.clear();
                     _showSnackBar('All history cleared successfully',
                         Colors.green.shade700);
+                    // Show interstitial after bulk delete (natural pause per AdMob policy)
+                    if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
+                      AdService.showInterstitialAd();
+                    }
                   }
                 },
               ),
@@ -367,11 +375,123 @@ class _HistoryPageState extends State<HistoryPage>
     }).toList();
   }
 
+  // Helper method to get the appropriate icon based on scan type
+  Widget _getTypeIcon(ScanModel scan) {
+    final isUrl = scan.codeValue.startsWith('http');
+    final isQr = scan.codeType.toLowerCase().contains('qr');
+    final isBarcode = scan.codeType.toLowerCase().contains('barcode');
+
+    if (isUrl) {
+      return Icon(Icons.language_rounded, color: Colors.white, size: 18);
+    } else if (isQr) {
+      return Icon(Icons.qr_code_2_rounded, color: Colors.white, size: 18);
+    } else if (isBarcode) {
+      // Using Barcode widget to display a barcode icon
+      return Container(
+        width: 18,
+        height: 18,
+        child: BarcodeWidget(
+          barcode: Barcode.code128(), // or Barcode.code39() or Barcode.ean13()
+          data: '1234567890', // Sample data for the icon
+          color: Colors.white,
+          width: 18,
+          height: 18,
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 0, // Hide text
+          ),
+        ),
+      );
+    } else {
+      // Fallback for unknown types
+      return Icon(Icons.qr_code_rounded, color: Colors.white, size: 18);
+    }
+  }
+
+  // Helper method to get the color based on scan type
+  Color _getIconColor(ScanModel scan) {
+    final isUrl = scan.codeValue.startsWith('http');
+    final isQr = scan.codeType.toLowerCase().contains('qr');
+    
+    if (isUrl) {
+      return Colors.blue.shade700;
+    } else if (isQr) {
+      return Colors.deepPurple.shade700;
+    } else {
+      return Colors.orange.shade700;
+    }
+  }
+
+  // Helper method to get the gradient based on scan type
+  Gradient _getGradient(ScanModel scan) {
+    final isUrl = scan.codeValue.startsWith('http');
+    final isQr = scan.codeType.toLowerCase().contains('qr');
+
+    if (isUrl) {
+      return LinearGradient(
+        colors: [Colors.blue.shade400, Colors.blue.shade700],
+      );
+    } else if (isQr) {
+      return LinearGradient(
+        colors: [Colors.deepPurple.shade400, Colors.deepPurple.shade700],
+      );
+    } else {
+      return LinearGradient(
+        colors: [Colors.orange.shade400, Colors.orange.shade700],
+      );
+    }
+  }
+
+  // Helper method to get the badge color based on scan type
+  Color _getBadgeColor(ScanModel scan) {
+    final isUrl = scan.codeValue.startsWith('http');
+    final isQr = scan.codeType.toLowerCase().contains('qr');
+
+    if (isUrl) {
+      return Colors.blue.shade700;
+    } else if (isQr) {
+      return Colors.deepPurple.shade700;
+    } else {
+      return Colors.orange.shade700;
+    }
+  }
+
+  // Helper method to get the small badge icon
+  Widget _getTypeBadgeIcon(ScanModel scan) {
+    final isUrl = scan.codeValue.startsWith('http');
+    final isQr = scan.codeType.toLowerCase().contains('qr');
+    final isBarcode = scan.codeType.toLowerCase().contains('barcode');
+
+    if (isUrl) {
+      return Icon(Icons.public_rounded, size: 10, color: _getIconColor(scan));
+    } else if (isQr) {
+      return Icon(Icons.qr_code_rounded, size: 10, color: _getIconColor(scan));
+    } else if (isBarcode) {
+      return Container(
+        width: 12,
+        height: 10,
+        child: BarcodeWidget(
+          barcode: Barcode.code128(),
+          data: '123456',
+          color: _getIconColor(scan),
+          width: 12,
+          height: 10,
+          style: TextStyle(
+            fontSize: 0,
+          ),
+        ),
+      );
+    } else {
+      return Icon(Icons.qr_code_rounded, size: 10, color: _getIconColor(scan));
+    }
+  }
+
   Widget _buildHistoryCard(ScanModel scan, dynamic key, Box<ScanModel> box) {
     final formattedDate =
         DateFormat('dd MMM yyyy • hh:mm a').format(scan.scanTime);
     final isUrl = scan.codeValue.startsWith('http');
     final isQr = scan.codeType.toLowerCase().contains('qr');
+    final isBarcode = scan.codeType.toLowerCase().contains('barcode');
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
@@ -409,41 +529,17 @@ class _HistoryPageState extends State<HistoryPage>
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: isUrl
-                          ? [Colors.blue.shade400, Colors.blue.shade700]
-                          : (isQr
-                              ? [
-                                  Colors.deepPurple.shade400,
-                                  Colors.deepPurple.shade700
-                                ]
-                              : [
-                                  Colors.orange.shade400,
-                                  Colors.orange.shade700
-                                ]),
-                    ),
+                    gradient: _getGradient(scan),
                     borderRadius: BorderRadius.circular(14),
                     boxShadow: [
                       BoxShadow(
-                        color: (isUrl
-                                ? Colors.blue
-                                : (isQr ? Colors.deepPurple : Colors.orange))
-                            .withOpacity(0.2),
+                        color: _getBadgeColor(scan).withOpacity(0.2),
                         blurRadius: 6,
                         offset: const Offset(0, 3),
                       ),
                     ],
                   ),
-                  child: Icon(
-                    isUrl
-                        ? Icons.language_rounded
-                        : (isQr
-                            ? Icons.qr_code_2_rounded
-                            : Icons
-                                .qr_code_rounded), // Using QR code icon for barcode
-                    color: Colors.white,
-                    size: 18,
-                  ),
+                  child: _getTypeIcon(scan),
                 ),
                 const SizedBox(width: 12),
 
@@ -490,29 +586,13 @@ class _HistoryPageState extends State<HistoryPage>
                         padding: const EdgeInsets.symmetric(
                             horizontal: 8, vertical: 3),
                         decoration: BoxDecoration(
-                          color: (isUrl
-                                  ? Colors.blue
-                                  : (isQr ? Colors.deepPurple : Colors.orange))
-                              .withOpacity(0.1),
+                          color: _getBadgeColor(scan).withOpacity(0.1),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(
-                              isUrl
-                                  ? Icons.public_rounded
-                                  : (isQr
-                                      ? Icons.qr_code_rounded
-                                      : Icons
-                                          .qr_code_rounded), // Using QR code icon for barcode
-                              size: 10,
-                              color: isUrl
-                                  ? Colors.blue.shade700
-                                  : (isQr
-                                      ? Colors.deepPurple.shade700
-                                      : Colors.orange.shade700),
-                            ),
+                            _getTypeBadgeIcon(scan),
                             const SizedBox(width: 4),
                             Text(
                               scan.codeType.toUpperCase(),
@@ -520,11 +600,7 @@ class _HistoryPageState extends State<HistoryPage>
                                 fontSize: 9,
                                 fontWeight: FontWeight.bold,
                                 letterSpacing: 0.3,
-                                color: isUrl
-                                    ? Colors.blue.shade700
-                                    : (isQr
-                                        ? Colors.deepPurple.shade700
-                                        : Colors.orange.shade700),
+                                color: _getBadgeColor(scan),
                               ),
                             ),
                           ],

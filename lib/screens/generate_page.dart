@@ -12,6 +12,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'history_page.dart';
 import '../services/database_service.dart';
 import '../widgets/ad_banner.dart';
+import '../services/ad_service.dart';
 
 class GeneratePage extends StatefulWidget {
   final String? initialData;
@@ -92,26 +93,35 @@ class _GeneratePageState extends State<GeneratePage>
       return;
     }
 
-    Uint8List? pngBytes = await _capturePngBytes();
-    if (pngBytes == null) return;
+    if (!mounted) return;
+    await AdService.performWithRewardedAdCheck(
+      context: context,
+      action: AdService.actionShare,
+      onAllowed: () async {
+        Uint8List? pngBytes = await _capturePngBytes();
+        if (pngBytes == null) return;
 
-    if (!kIsWeb && (Platform.isLinux || Platform.isWindows)) {
-      Clipboard.setData(ClipboardData(text: 'Data: $_generatedData'));
-      _showSnackBar('Sharing simulated on Desktop. Text copied!', Colors.blue);
-      return;
-    }
+        if (!kIsWeb && (Platform.isLinux || Platform.isWindows)) {
+          Clipboard.setData(ClipboardData(text: 'Data: $_generatedData'));
+          _showSnackBar(
+              'Sharing simulated on Desktop. Text copied!', Colors.blue);
+          return;
+        }
 
-    final tempDir = await getTemporaryDirectory();
-    final file = await File('${tempDir.path}/scanswift_code.png').create();
-    await file.writeAsBytes(pngBytes);
+        final tempDir = await getTemporaryDirectory();
+        final file =
+            await File('${tempDir.path}/scanswift_code.png').create();
+        await file.writeAsBytes(pngBytes);
 
-    try {
-      await Share.shareXFiles([XFile(file.path)],
-          text: 'Generated via ScanSwift');
-      setState(() => _adRefreshId++);
-    } catch (_) {
-      _showSnackBar('Unable to open share sheet', Colors.redAccent);
-    }
+        try {
+          await Share.shareXFiles([XFile(file.path)],
+              text: 'Generated via ScanSwift');
+          if (mounted) setState(() => _adRefreshId++);
+        } catch (_) {
+          _showSnackBar('Unable to open share sheet', Colors.redAccent);
+        }
+      },
+    );
   }
 
   Future<void> _saveGeneratedData() async {
@@ -331,7 +341,7 @@ class _GeneratePageState extends State<GeneratePage>
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(
-                  Icons.qr_code_2_rounded,
+                  Icons.view_week_rounded,
                   size: 16,
                 ),
                 const SizedBox(width: 6),
@@ -595,7 +605,7 @@ class _GeneratePageState extends State<GeneratePage>
                 child: Icon(
                   _selectedTab == 0
                       ? Icons.qr_code_2_rounded
-                      : Icons.qr_code_scanner_rounded,
+                      : Icons.view_week_rounded,
                   size: 40,
                   color: Colors.deepPurple.shade300,
                 ),
@@ -820,9 +830,18 @@ class _GeneratePageState extends State<GeneratePage>
                 icon: Icons.copy_rounded,
                 label: 'Copy',
                 color: Colors.blue.shade600,
-                onPressed: () {
-                  Clipboard.setData(ClipboardData(text: _generatedData));
-                  _showSnackBar('Copied to clipboard!', Colors.blue.shade600);
+                onPressed: () async {
+                  if (!mounted) return;
+                  await AdService.performWithRewardedAdCheck(
+                    context: context,
+                    action: AdService.actionCopy,
+                    onAllowed: () {
+                      Clipboard.setData(
+                          ClipboardData(text: _generatedData));
+                      _showSnackBar(
+                          'Copied to clipboard!', Colors.blue.shade600);
+                    },
+                  );
                 },
                 isOutlined: true,
               ),

@@ -1,3 +1,5 @@
+import 'dart:io' show Platform;
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import './scan_page.dart';
@@ -6,6 +8,7 @@ import './generate_page.dart';
 import './profile_page.dart';
 import './privacy_policy_page.dart';
 import './settings_page.dart';
+import '../services/ad_service.dart';
 // Each page shows its own banner individually to avoid duplicates.
 
 class HomeScreen extends StatefulWidget {
@@ -16,7 +19,7 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   int _currentIndex = 0;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
   late AnimationController _animationController;
@@ -55,6 +58,7 @@ class _HomeScreenState extends State<HomeScreen>
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 400),
       vsync: this,
@@ -64,7 +68,19 @@ class _HomeScreenState extends State<HomeScreen>
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    // App came from background to foreground
+    if (state == AppLifecycleState.resumed) {
+      if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
+        AdService.showInterstitialAd();
+      }
+    }
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _animationController.dispose();
     super.dispose();
   }
@@ -408,7 +424,15 @@ class _HomeScreenState extends State<HomeScreen>
           if (index == 3) {
             _scaffoldKey.currentState?.openDrawer();
           } else {
+            // Show interstitial when returning from History (1) to Scanner (0)
+            final isHistoryToScanner =
+                _currentIndex == 1 && index == 0;
             setState(() => _currentIndex = index);
+            if (isHistoryToScanner &&
+                !kIsWeb &&
+                (Platform.isAndroid || Platform.isIOS)) {
+              AdService.showInterstitialAd();
+            }
           }
         },
         height: 56,

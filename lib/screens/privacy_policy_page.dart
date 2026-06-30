@@ -1,41 +1,14 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:google_mobile_ads/google_mobile_ads.dart';
+import 'dart:io' show Platform;
 import 'package:url_launcher/url_launcher.dart';
+import '../widgets/ad_banner.dart';
 
-class PrivacyPolicyPage extends StatefulWidget {
+class PrivacyPolicyPage extends StatelessWidget {
   const PrivacyPolicyPage({super.key});
 
-  @override
-  State<PrivacyPolicyPage> createState() => _PrivacyPolicyPageState();
-}
-
-class _PrivacyPolicyPageState extends State<PrivacyPolicyPage> {
-  final String privacyUrl = "https://ratanproducts.com/privacy";
-  BannerAd? _bannerAd;
-  bool _isBannerAdLoaded = false;
-
-  @override
-  void initState() {
-    super.initState();
-    _initBannerAd();
-  }
-
-  void _initBannerAd() {
-    _bannerAd = BannerAd(
-      size: AdSize.banner,
-      adUnitId: 'ca-app-pub-3940256099942544/6300978111',
-      listener: BannerAdListener(
-        onAdLoaded: (ad) => setState(() => _isBannerAdLoaded = true),
-        onAdFailedToLoad: (ad, error) {
-          ad.dispose();
-          debugPrint('Ad failed to load: $error');
-        },
-      ),
-      request: const AdRequest(),
-    );
-    _bannerAd?.load();
-  }
+  static const String privacyUrl = 'https://ratanproducts.com/privacy';
 
   Future<void> _openPrivacyUrl(BuildContext context) async {
     final Uri url = Uri.parse(privacyUrl);
@@ -66,12 +39,6 @@ class _PrivacyPolicyPageState extends State<PrivacyPolicyPage> {
   }
 
   @override
-  void dispose() {
-    _bannerAd?.dispose();
-    super.dispose();
-  }
-
-  @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
@@ -79,9 +46,8 @@ class _PrivacyPolicyPageState extends State<PrivacyPolicyPage> {
         elevation: 0,
         backgroundColor: Colors.transparent,
         foregroundColor: Colors.deepPurple.shade800,
-        
         title: Row(
-          children: [  
+          children: [
             Text(
               'Privacy Policy',
               style: GoogleFonts.inter(
@@ -92,7 +58,6 @@ class _PrivacyPolicyPageState extends State<PrivacyPolicyPage> {
             ),
           ],
         ),
-        
       ),
       body: Padding(
         padding: const EdgeInsets.all(15),
@@ -224,34 +189,13 @@ class _PrivacyPolicyPageState extends State<PrivacyPolicyPage> {
                 onPressed: () => _openPrivacyUrl(context),
               ),
             ),
+            const SizedBox(height: 12),
+            // Banner Ad at bottom
+            const AdBanner(),
+            const SizedBox(height: 8),
           ],
         ),
       ),
-      bottomNavigationBar: _isBannerAdLoaded
-          ? Container(
-              decoration: BoxDecoration(
-                color: Colors.white,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.grey.withOpacity(0.1),
-                    blurRadius: 10,
-                    offset: const Offset(0, -2),
-                  ),
-                ],
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(height: 1, color: Colors.grey.shade200),
-                  SizedBox(
-                    height: _bannerAd!.size.height.toDouble(),
-                    width: _bannerAd!.size.width.toDouble(),
-                    child: AdWidget(ad: _bannerAd!),
-                  ),
-                ],
-              ),
-            )
-          : const SizedBox.shrink(),
     );
   }
 
