@@ -16,7 +16,6 @@ dependencies:
   # Core Engines
   mobile_scanner: ^5.0.0
   qr_flutter: ^4.1.0
-  barcode_scan2: ^4.7.2
   
   # Storage & Utilities
   hive_flutter: ^1.1.0
@@ -41,7 +40,7 @@ dev_dependencies:
     sdk: flutter
   hive_generator: ^2.0.1
   build_runner: ^2.4.9
-  flutter_launcher_icons: ^0.13.1 # বা লেটেস্ট ভার্সন
+  flutter_launcher_icons: ^0.14.4 # বা লেটেস্ট ভার্সন
 
 flutter_launcher_icons:
   android: "launcher_icon"
